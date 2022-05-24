@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
-const port = process.env.PORT || 5000;
+const port =  process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 app.use(cors())
@@ -16,21 +16,49 @@ async function run() {
     try{
         await client.connect();
         const productCollection = client.db("style-fabrics").collection("products");
+        const orderCollection = client.db("style-fabrics").collection("orders");
 
         app.get('/product', async(req, res)=>{
             const query = {}
             const cursor =  productCollection.find(query);
             const products= await cursor.toArray()
             res.send(products); 
-        })
-    }
-    finally{}
+        });
+
+
+        app.get('/available', async (req, res) => {
+          const producted = await productCollection.find().toArray();
+          const ordered = await orderCollection.find().toArray();
+          producted.forEach(product => {
+            const productOrder = ordered.filter(order => order.productName === product.productName);
+             const bookedQuantity = productOrder.map(orderQty=> parseInt(orderQty.quantity));
+              if(bookedQuantity[0] == null){
+                product.availableQuantity;
+              }else{
+                const available = parseInt(product.availableQuantity)-bookedQuantity[0];
+                product.availableQuantity = available;
+              }
+          });
     
+          res.send(producted);
+        })
+
+         /*
+        * order api
+        */    
+       app.post('/order', async(req,res)=>{
+        const order = req.body;
+        const result = await orderCollection.insertOne(order);
+        res.send(result);
+      });
+
+    }
+    finally{}  
 }
-run().catch(console.dir())
+run().catch(console.dir)
 
 app.get('/', (req, res) => {
-  res.send('Hello World!, Welcome to style fabrics app...')
+  res.send('Hello World!, Welcome to style fabrics app...');
 })
 
 app.listen(port, () => {
