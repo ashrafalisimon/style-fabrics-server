@@ -36,6 +36,19 @@ async function run() {
         const orderCollection = client.db("style-fabrics").collection("orders");
         const userCollection = client.db("style-fabrics").collection("users");
 
+
+        // const verifyAdmin = async (req, res, next) => {
+        //   const requester = req.decoded.email;
+        //   const requesterAccount = await userCollection.findOne({ email: requester });
+        //   if (requesterAccount.role === 'admin') {
+        //     next();
+        //   }
+        //   else {
+        //     res.status(403).send({ message: 'forbidden' });
+        //   }
+        // }
+
+
         app.get('/product', async(req, res)=>{
             const query = {}
             const cursor =  productCollection.find(query);
@@ -51,14 +64,26 @@ async function run() {
           const users = await userCollection.find().toArray();
           res.send(users);
         });
+
+       
+
+
         app.put('/user/admin/:email',verifyJWT, async(req,res)=>{
             const email = req.params.email;
-            const filter ={email: email};
-            const updateDoc= {
-              $set:{role:'admin'}
+            const requester =req.decoded.email;
+            const requesterAccount = await userCollection.findOne({email: requester});
+            if(requesterAccount.role === 'admin'){
+              const filter ={email: email};
+              const updateDoc= {
+                $set:{role:'admin'}
+              }
+              const result = await userCollection.updateOne(filter, updateDoc);
+              res.send(result);
             }
-            const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result);
+            else{
+              res.status(403).send({message: 'forbidden'})
+            }
+           
         });
 
        app.put('/user/:email', async(req,res)=>{
