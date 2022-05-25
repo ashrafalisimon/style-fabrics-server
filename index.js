@@ -25,10 +25,13 @@ async function run() {
             res.send(products); 
         });
 
-
+ /*
+        * available api
+        */  
         app.get('/available', async (req, res) => {
           const producted = await productCollection.find().toArray();
-          const ordered = await orderCollection.find().toArray();
+          const query = {};
+          const ordered = await orderCollection.find(query).toArray();
           producted.forEach(product => {
             const productOrder = ordered.filter(order => order.productName === product.productName);
              const bookedQuantity = productOrder.map(orderQty=> parseInt(orderQty.quantity));
@@ -46,6 +49,19 @@ async function run() {
          /*
         * order api
         */    
+        app.get('/order', async(req,res)=>{
+          const user= req.query.user; 
+          const query = {user:user}
+          const cursor =  orderCollection.find(query);
+          const orders= await cursor.toArray()
+          res.send(orders); 
+
+          // const user= req.query.user; 
+          // const query ={user:user};
+          // const orders = await orderCollection.find(query).toArray();
+          // res.send(orders);
+        })
+
        app.post('/order', async(req,res)=>{
         const order = req.body;
         const result = await orderCollection.insertOne(order);
