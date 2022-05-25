@@ -15,11 +15,11 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 
 function verifyJWT(req,res, next){
-  const authHeader = req.headers.authorization;
-  if(!authHeader){
+  const authorization =req.headers.authorization;
+  if(!authorization){
     return res.status(401).send({message: 'UnAuthorization access'});
   }
-  const token = authHeader.split(' ')[1];
+  const token = authorization.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
     if(err){
       return res.status(403).send({message: 'Forbidden access'})
@@ -47,9 +47,18 @@ async function run() {
         * user api
         */  
 
-        app.get('/user', async(req,res)=>{
+        app.get('/user',verifyJWT, async(req,res)=>{
           const users = await userCollection.find().toArray();
           res.send(users);
+        });
+        app.put('/user/admin/:email',verifyJWT, async(req,res)=>{
+            const email = req.params.email;
+            const filter ={email: email};
+            const updateDoc= {
+              $set:{role:'admin'}
+            }
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
         });
 
        app.put('/user/:email', async(req,res)=>{
@@ -61,7 +70,7 @@ async function run() {
            $set: user
          };
          const result = await userCollection.updateOne(filter, updateDoc, options);  
-         const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECETE, { expiresIn: '1h' });
+         const token = jwt.sign({email:email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'});
          res.send({result, token});
        })
 
@@ -90,18 +99,17 @@ async function run() {
         * order api
         */    
         app.get('/order',verifyJWT, async(req,res)=>{
-          const user= req.query.user; 
-          const decodedEmail = req.decoded.email;
-          if(patient === decodedEmail){
+          const user= req.query.user;
+          const decodedMail = req.decoded.email;
+          if(user===decodedMail){
             const query = {user:user}
-            const cursor =  orderCollection.find(query);
-            const orders= await cursor.toArray()
-            return res.send(orders); 
+            const orders = await orderCollection.find(query).toArray();
+            return res.send(orders);  
           }
           else{
-            return res.status(403).send({message: 'Forbidden access'})
+            return res.status(403).send({message: 'Forbidden Access'})
           }
-        })
+        });
 
        app.post('/order', async(req,res)=>{
         const order = req.body;
