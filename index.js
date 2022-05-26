@@ -38,16 +38,6 @@ async function run() {
         const reviewCollection = client.db("style-fabrics").collection("reviews");
 
 
-        // const verifyAdmin = async (req, res, next) => {
-        //   const requester = req.decoded.email;
-        //   const requesterAccount = await userCollection.findOne({ email: requester });
-        //   if (requesterAccount.role === 'admin') {
-        //     next();
-        //   }
-        //   else {
-        //     res.status(403).send({ message: 'forbidden' });
-        //   }
-        // }
 
 
         app.get('/product', async(req, res)=>{
@@ -55,6 +45,12 @@ async function run() {
             const cursor =  productCollection.find(query);
             const products= await cursor.toArray()
             res.send(products); 
+        });
+
+        app.post('/product', async(req,res)=>{
+          const review = req.body;
+          const result = await productCollection.insertOne(review);
+          res.send(result);
         });
 
          /*
@@ -152,7 +148,14 @@ async function run() {
 
          /*
         * order api
-        */    
+        */  
+         app.get('/allOrder', async(req, res)=>{
+          const query = {}
+          const cursor =  orderCollection.find(query);
+          const allOrders= await cursor.toArray()
+          res.send(allOrders); 
+      });
+         
         app.get('/order',verifyJWT, async(req,res)=>{
           const user= req.query.user;
           const decodedMail = req.decoded.email;
