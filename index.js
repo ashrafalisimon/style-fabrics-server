@@ -35,6 +35,7 @@ async function run() {
         const productCollection = client.db("style-fabrics").collection("products");
         const orderCollection = client.db("style-fabrics").collection("orders");
         const userCollection = client.db("style-fabrics").collection("users");
+        const reviewCollection = client.db("style-fabrics").collection("reviews");
 
 
         // const verifyAdmin = async (req, res, next) => {
@@ -56,6 +57,23 @@ async function run() {
             res.send(products); 
         });
 
+         /*
+        * review api
+        */ 
+       app.get('/review', async(req,res)=>{
+         const query ={};
+         const cursor= reviewCollection.find(query);
+         const reviews = await cursor.toArray();
+         res.send(reviews);
+       });
+
+       app.post('/review', async(req,res)=>{
+         const review = req.body;
+         const result = await reviewCollection.insertOne(review);
+         res.send(result);
+       });
+
+
         /*
         * user api
         */  
@@ -65,6 +83,7 @@ async function run() {
           res.send(users);
         });
 
+
         app.get('/admin/:email', async(req, res) =>{
           const email = req.params.email;
           const user = await userCollection.findOne({email: email});
@@ -72,7 +91,7 @@ async function run() {
           res.send({admin: isAdmin})
         });
 
-
+        
         app.put('/user/admin/:email',verifyJWT, async(req,res)=>{
             const email = req.params.email;
             const requester =req.decoded.email;
